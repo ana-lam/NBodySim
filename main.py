@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import astropy.units as u
 from simulation.body import Body
 from simulation.system import System
 from simulation.forces import gravitational_force, electrostatic_force
