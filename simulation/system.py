@@ -169,6 +169,8 @@ class System():
 
             self.total_vec[:, 3:] += d3*self.ODEs(t, self.total_vec, self.masses, self.G_is_one)[:, 3:] * dt
 
+            self.total_vec[:, :3] += c4*self.total_vec[:, 3:] * dt
+
             new_vec = self.total_vec
 
         return new_vec
