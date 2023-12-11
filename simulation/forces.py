@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
-import math
 import numpy as np
 import astropy.units as u 
 import astropy.constants as c 
-import time
-import sys
 
-def gravitational_force(t, vec, masses, G_is_one=None, softening=None):
+def gravitational_force(t, vec, masses, G_is_one=None, softening=1e-3):
 
     bodies = len(vec)  # retrieve number of bodies based on vec length
 
@@ -24,10 +21,10 @@ def gravitational_force(t, vec, masses, G_is_one=None, softening=None):
 
                 dx = pos_i - vec[j, :3]
                 
+                r = np.linalg.norm(dx)
+
                 if softening:
-                    r = (dx[0]**2 + dx[1]**2 + dx[2]**2 + softening**2)
-                else:
-                    r = np.linalg.norm(dx)
+                    r = np.sqrt(r**2 + softening**2)
 
                 # Gravitational force
                 if G_is_one:
@@ -42,7 +39,7 @@ def gravitational_force(t, vec, masses, G_is_one=None, softening=None):
 
     return new_vec
 
-def electrostatic_force(t, vec, charges, has_units=False, softening=None):
+def electrostatic_force(t, vec, charges, has_units=False, softening=1e-3):
 
     bodies = len(vec)  # retrieve number of bodies based on vec length
 
@@ -59,10 +56,10 @@ def electrostatic_force(t, vec, charges, has_units=False, softening=None):
 
                 dx = pos_i - vec[j, :3]
                 
+                r = np.linalg.norm(dx)
+
                 if softening:
-                    r = (dx[0]**2 + dx[1]**2 + dx[2]**2 + softening**2)
-                else:
-                    r = np.linalg.norm(dx)
+                    r = np.sqrt(r**2 + softening**2)
 
                 # Coulomb's law 
                 k = 8.9875e9  # Coulomb's constant in N m^2 / C^2

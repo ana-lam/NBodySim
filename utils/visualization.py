@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import os
-from energy_calc import compute_grav_potential_energy
+from utils.energy_calc import compute_grav_potential_energy
+import matplotlib.colors as colors
+matplotlib.use('Agg')
 
 def render_positions(simulation, dt, output_dir):
     
@@ -20,15 +23,15 @@ def render_positions(simulation, dt, output_dir):
     for i in range(simulation.vec_store.shape[1]):
         ax.plot(simulation.vec_store[dt, i, 0], simulation.vec_store[dt, i, 1], 'o')
 
-    ax.set_title(f'Positions at time step: {dt}')
-    ax.set_xlabel('X Position')
-    ax.set_ylabel('Y Position')
+    ax.set_title(f'Time step: {dt}')
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
     # ax.legend()
 
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
 
-    plt.savefig(os.path.join(output_dir, f'orbit_timestep_{dt}.png'))
+    plt.savefig(os.path.join(output_dir, f'timestep_{dt}.png'))
     plt.close(fig)
 
 def render_positions_w_potential(simulation, dt, output_dir, vmin, vmax):
@@ -46,9 +49,9 @@ def render_positions_w_potential(simulation, dt, output_dir, vmin, vmax):
     for i in range(simulation.vec_store.shape[1]):
         ax.plot(simulation.vec_store[dt, i, 0], simulation.vec_store[dt, i, 1], 'o', label=f'Body {i + 1}', markeredgecolor='black', fillstyle='none')
 
-    ax.set_title(f'Positions at time step: {dt}')
-    ax.set_xlabel('X Position')
-    ax.set_ylabel('Y Position')
+    ax.set_title(f'Time step: {dt}')
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
     # ax.legend()
 
     ax.set_xlim(xmin, xmax)
@@ -68,10 +71,10 @@ def render_positions_w_potential(simulation, dt, output_dir, vmin, vmax):
         for j in range(len(y_range)):
             position = np.array([X[i, j], Y[i, j], 0])
             for n in range(simulation.N):
-                potential_grid[i, j] += compute_grav_potential_energy(simulation.vec_store[dt, n, :3], simulation.masses[n], position, simulation.has_units)
+                potential_grid[i, j] += compute_grav_potential_energy(simulation.vec_store[dt, n, :3], simulation.masses[n], position)
 
     pcm = ax.pcolormesh(X, Y, np.log10(potential_grid), cmap='viridis', shading='auto', vmin=vmin, vmax=vmax)
-    fig.colorbar(pcm, ax=ax, label='Gravitational Potential')
+    fig.colorbar(pcm, ax=ax, label=r"$\log_{10}\phi$")
 
-    plt.savefig(os.path.join(output_dir, f'orbit_timestep_{dt}.png'))
+    plt.savefig(os.path.join(output_dir, f'timestep_{dt}.png'))
     plt.close(fig)

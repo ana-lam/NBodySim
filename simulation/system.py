@@ -6,7 +6,7 @@ import astropy.units as u
 import astropy.constants as c 
 import time
 import sys
-from forces import gravitational_force, electrostatic_force
+from simulation.forces import gravitational_force, electrostatic_force
 from utils.energy_calc import compute_grav_potential_energy, calculate_total_energy
 
 class System():

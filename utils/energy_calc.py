@@ -38,7 +38,7 @@ def calculate_total_energy(vec, masses, G_is_one=False):
 
     return total_energy, KE, U
 
-def compute_grav_potential_energy(body_position, mass, position, G_is_one=False):
+def compute_grav_potential_energy(body_position, mass, position, G_is_one=False, softening=1e-3):
         
         if G_is_one:
             g = 1
@@ -48,6 +48,9 @@ def compute_grav_potential_energy(body_position, mass, position, G_is_one=False)
         dx = position - body_position
 
         r = np.linalg.norm(dx)
+
+        if softening:
+            r = np.sqrt(np.sum(dx**2) + softening**2)
 
         U = g * mass / r
 
