@@ -8,7 +8,10 @@ from utils.energy_calc import compute_grav_potential_energy
 import matplotlib.colors as colors
 matplotlib.use('Agg')
 
-def render_positions(simulation, dt, output_dir):
+def render_positions(simulation, dt, output_dir, skip_frames=None):
+
+    if dt % skip_frames != 0:
+        return
     
     fig, ax = plt.subplots()
 
@@ -34,7 +37,10 @@ def render_positions(simulation, dt, output_dir):
     plt.savefig(os.path.join(output_dir, f'timestep_{dt}.png'))
     plt.close(fig)
 
-def render_positions_w_potential(simulation, dt, output_dir, vmin, vmax):
+def render_positions_w_potential(simulation, dt, output_dir, vmin, vmax, skip_frames=None):
+
+    if dt % skip_frames != 0:
+        return
     
     fig, ax = plt.subplots()
 
@@ -78,3 +84,23 @@ def render_positions_w_potential(simulation, dt, output_dir, vmin, vmax):
 
     plt.savefig(os.path.join(output_dir, f'timestep_{dt}.png'))
     plt.close(fig)
+
+
+def plot_orbits(simulation):
+
+    fig, ax = plt.subplots()
+
+    positions = simulation.vec_store[:, :, :3]
+
+    for i in range(positions.shape[1]):
+        ax.scatter(positions[:, i, 0], positions[:, i, 1], s=1,color=[.7,.7,1])
+        ax.scatter(positions[-1, i, 0],positions[-1, i, 1],s=10,color='blue')
+
+    ax.set_title('Orbits')
+    ax.set_xlabel('X Position')  
+    ax.set_ylabel('Y Position')
+    ax.legend()
+
+    plt.show()
+
+# def plot_energy(simulation, ):

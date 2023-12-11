@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from utils.energy_calc import compute_grav_potential_energy
 from utils.visualization import render_positions, render_positions_w_potential
 
-def create_animation(simulation, output_dir, file_name="output", potential_on=False):
+def create_animation(simulation, output_dir, file_name="output", potential_on=False, fps=30, skip_frames=None):
 
     plt.close('all')
 
@@ -57,17 +57,15 @@ def create_animation(simulation, output_dir, file_name="output", potential_on=Fa
         for i in range(n_cpu):
             for j in range(len(simulations_batch[i])):
                 j+= i*offset
-                pool.apply_async(render_positions_w_potential, args=(simulation, j, output_dir, vmin, vmax))
+                pool.apply_async(render_positions_w_potential, args=(simulation, j, output_dir, vmin, vmax, skip_frames))
     else:
         for i in range(n_cpu):
             for j in range(len(simulations_batch[i])):
                 j+= i*offset
-                pool.apply_async(render_positions, args=(simulation, j, output_dir))
+                pool.apply_async(render_positions, args=(simulation, j, output_dir, skip_frames))
 
     pool.close()
     pool.join()
-
-    fps = 30
 
     image_files = natsorted([os.path.join(output_dir, img) for img in os.listdir(output_dir) if img.endswith(".png")])
 
