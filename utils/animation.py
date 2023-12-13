@@ -6,7 +6,7 @@ import moviepy.video.io.ImageSequenceClip
 import multiprocessing as mp
 import numpy as np
 import matplotlib.pyplot as plt
-from utils.energy_calc import compute_grav_potential_energy
+from utils.energy_calc import compute_grav_potential_energy, compute_elec_potential_energy
 from utils.visualization import render_positions, render_positions_w_potential
 
 
@@ -36,18 +36,33 @@ def create_animation(simulation, output_dir, file_name="output", potential_on=Fa
     X, Y = np.meshgrid(x_range, y_range)
     potential_grid = np.zeros_like(X)
 
-    for i in range(len(x_range)):
-        for j in range(len(y_range)):    
-            position = np.array([X[i, j], Y[i, j], 0])
-            for n in range(simulation.N):
-                potential_grid[i, j] += compute_grav_potential_energy(simulation.vec_store[1, n, :3], simulation.masses[n], position)
+    if simulation.forces == "gravity":
+        for i in range(len(x_range)):
+            for j in range(len(y_range)):    
+                position = np.array([X[i, j], Y[i, j], 0])
+                for n in range(simulation.N):
+                    potential_grid[i, j] += compute_grav_potential_energy(simulation.vec_store[1, n, :3], simulation.masses[n], position)
+
+        # determine vmax and vmin with buffer
+        vmax = np.max(np.log10(potential_grid))
+        vmin = np.min(np.log10(potential_grid))
+        v_range = vmax-vmin
+        vmin = vmin - 0.1*v_range
+        vmax = vmax - 0.1*v_range
+
+    elif simulation.forces == "coulomb":
+        for i in range(len(x_range)):
+            for j in range(len(y_range)):    
+                position = np.array([X[i, j], Y[i, j], 0])
+                for n in range(simulation.N):
+                    potential_grid[i, j] += compute_elec_potential_energy(simulation.vec_store[1, n, :3], simulation.charges[n], position)
     
-    # determine vmax and vmin with buffer
-    vmax = np.max(np.log10(potential_grid))
-    vmin = np.min(np.log10(potential_grid))
-    v_range = vmax-vmin
-    vmin = vmin - 0.1*v_range
-    vmax = vmax - 0.1*v_range
+        # determine vmax and vmin with buffer
+        vmax = np.max(potential_grid)
+        vmin = np.min(potential_grid)
+        v_range = vmax-vmin
+        vmin = vmin - 0.1*v_range
+        vmax = vmax - 0.1*v_range
 
     # make output directory
     if not os.path.isdir(output_dir):
@@ -78,6 +93,8 @@ def create_animation(simulation, output_dir, file_name="output", potential_on=Fa
 
     # generate mp4 from plot pngs using moviepy
     clip = moviepy.video.io.ImageSequenceClip.ImageSequenceClip(image_files, fps=fps)
+    if not os.path.isdir("animations"):
+        os.mkdir("animations")
     clip.write_videofile(f"animations/{file_name}.mp4")
 
     # delete plot pngs and remove directory

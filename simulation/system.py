@@ -4,7 +4,7 @@ import numpy as np
 import astropy.units as u 
 import time
 import sys
-from utils.energy_calc import compute_grav_potential_energy, calculate_energies
+from utils.energy_calc import compute_elec_potential_energy, compute_grav_potential_energy, calculate_grav_energies, calculate_elec_energies
 
 
 """ System Instance
@@ -40,6 +40,12 @@ class System():
     """
     def ODEs_to_solve(self, ODEs):                                     
         self.ODEs = ODEs
+        if self.ODEs.__name__ == 'electrostatic_force':
+            self.forces = "coulomb"
+        elif self.ODEs.__name__ == 'gravitational_force':
+            self.forces = "gravity"
+        else:
+            raise Exception('Not a valid ODE')
 
 
     """Set integration method to use.
@@ -50,7 +56,6 @@ class System():
     """
     def method_to_use(self, method):                                    
         self.method = method
-
 
     """RUNGE_KUTTA 4TH ORDER CALCULATION.
     t: current time step
@@ -209,8 +214,8 @@ class System():
             print("Using RK4...")
         elif self.method == 'leapfrog':
             print("Using leapfrog...")
-        elif self.method == 'velocityVerlet':
-            print("Using velocityVerlet...")
+        elif self.method == 'velocity_verlet':
+            print("Using velocity_verlet...")
         elif self.method == 'yoshida':
             print("Using yoshida...")
 
@@ -223,8 +228,8 @@ class System():
                 new_vec = self.RK4(T, dt)
             elif self.method == 'leapfrog':
                 new_vec = self.leapfrog(T, dt)
-            elif self.method == 'velocityVerlet':
-                new_vec = self.velocityVerlet(T, dt)
+            elif self.method == 'velocity_verlet':
+                new_vec = self.velocity_verlet(T, dt)
             elif self.method == 'yoshida':
                 new_vec = self.yoshida(T, dt)
             
@@ -234,7 +239,10 @@ class System():
             self.total_vec = new_vec
             T += dt
 
-            total_energy, KE, U = calculate_energies(self.vec_store[i], self.masses, self.G_is_one)
+            if self.forces == "gravity":
+                total_energy, KE, U = calculate_grav_energies(self.vec_store[i], self.masses, self.dimensionless)
+            elif self.forces == "coulomb":
+                total_energy, KE, U = calculate_elec_energies(self.vec_store[i], self.masses, self.charges, self.dimensionless)
             self.energy_store.append(total_energy.copy())
             self.KE_store.append(KE.copy())
             self.U_store.append(U.copy())

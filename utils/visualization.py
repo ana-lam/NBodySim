@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import os
-from utils.energy_calc import compute_grav_potential_energy
+from utils.energy_calc import compute_grav_potential_energy, compute_elec_potential_energy
+import cmocean
 matplotlib.use('Agg')
 
 
@@ -90,15 +91,31 @@ def render_positions_w_potential(simulation, dt, output_dir, vmin, vmax, skip_fr
 
     potential_grid = np.zeros_like(X)
 
-    # calculate and plot potential energy for each grid space
-    for i in range(len(x_range)):
-        for j in range(len(y_range)):
-            position = np.array([X[i, j], Y[i, j], 0])
-            for n in range(simulation.N):
-                potential_grid[i, j] += compute_grav_potential_energy(simulation.vec_store[dt, n, :3], simulation.masses[n], position)
+    if simulation.forces == "gravity":
 
-    pcm = ax.pcolormesh(X, Y, np.log10(potential_grid), cmap='viridis', shading='auto', vmin=vmin, vmax=vmax)
-    fig.colorbar(pcm, ax=ax, label=r"$\log_{10}\phi$")
+        # calculate and plot potential energy for each grid space
+        for i in range(len(x_range)):
+            for j in range(len(y_range)):
+                position = np.array([X[i, j], Y[i, j], 0])
+                for n in range(simulation.N):
+                    potential_grid[i, j] += compute_grav_potential_energy(simulation.vec_store[dt, n, :3], simulation.masses[n], position)
+
+        pcm = ax.pcolormesh(X, Y, np.log10(potential_grid), cmap='viridis', shading='auto', vmin=vmin, vmax=vmax)
+        fig.colorbar(pcm, ax=ax, label=r"$\log_{10}\phi$")
+    
+    elif simulation.forces == "coulomb":
+
+        cmap = cmocean.cm.matter_r
+
+        # calculate and plot potential energy for each grid space
+        for i in range(len(x_range)):
+            for j in range(len(y_range)):
+                position = np.array([X[i, j], Y[i, j], 0])
+                for n in range(simulation.N):
+                    potential_grid[i, j] += compute_elec_potential_energy(simulation.vec_store[dt, n, :3], simulation.charges[n], position)
+
+        pcm = ax.pcolormesh(X, Y, potential_grid, cmap=cmap, shading='auto', vmin=vmin, vmax=vmax)
+        fig.colorbar(pcm, ax=ax, label=r"$\phi$")
 
     plt.savefig(os.path.join(output_dir, f'timestep_{dt}.png'))
     plt.close(fig)

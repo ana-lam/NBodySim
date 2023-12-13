@@ -26,9 +26,9 @@ class Body():
             self.x_vec = np.array(x_vec)
         
         if isinstance(v_vec[0], u.Quantity):
-            self.x_vec = np.array([i.si.value for i in v_vec])    
+            self.v_vec = np.array([i.si.value for i in v_vec])    
         else:
-            self.x_vec = np.array(v_vec)
+            self.v_vec = np.array(v_vec)
 
         if isinstance(charge, u.Quantity):
             self.charge = charge.si.value
