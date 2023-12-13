@@ -43,19 +43,23 @@ def parse_bodies(num_bodies, gravity, coulomb=None, masses=None, x_vecs=None, v_
 def main():
 
     parser = argparse.ArgumentParser(description='Run N Body Simulations using numerical integration methods of choice & animate them.')
-    parser.add_argument("--num-bodies", type=int, default=1, help="Number of bodies in the simulation")
-    parser.add_argument("--gravity", action='store_true', default=True, help="Model gravitational forces")
-    parser.add_argument("--coulomb", action='store_true', help="Model electrostatic forces")
-    parser.add_argument("--dimensionless", action='store_true', default=False, help="Dimensionless, constants=1")
-    parser.add_argument("--file_name", type=str, default="output", help="name for mp4 file")
+    parser.add_argument("--num-bodies", type=int, default=1, help="Number of bodies in the simulation (simulation)")
+    parser.add_argument("--gravity", action='store_true', default=True, help="Model gravitational forces (simulation)")
+    parser.add_argument("--coulomb", action='store_true', help="Model electrostatic forces (simulation)")
+    parser.add_argument("--dimensionless", action='store_true', default=False, help="Dimensionless, constants=1 (simulation)")
 
-    parser.add_argument("--mass", type=float, nargs="+", help="Mass of the bodies")
-    parser.add_argument("--x-vec", type=float, nargs="+", help="Position vector (x, y, z) of the bodies")
-    parser.add_argument("--v-vec", type=float, nargs="+", help="Velocity vector (vx, vy, vz) of the bodies")
-    parser.add_argument("--charge", type=float, nargs="+", help="Charge of the bodies")
-    parser.add_argument("--int", choices=["RK4", "leapfrog", "velocity_verlet", "yoshida"], default="RK4", help="Integration method")
-    parser.add_argument("--T", type=float, nargs="?", help="Total time to run simulation")
-    parser.add_argument("--dt", type=float, nargs="?", help="Timestep size")
+    parser.add_argument("--mass", type=float, nargs="+", help="Mass of the bodies (simulation)")
+    parser.add_argument("--x-vec", type=float, nargs="+", help="Position vector (x, y, z) of the bodies (simulation)")
+    parser.add_argument("--v-vec", type=float, nargs="+", help="Velocity vector (vx, vy, vz) of the bodies (simulation)")
+    parser.add_argument("--charge", type=float, nargs="+", help="Charge of the bodies (simulation)")
+    parser.add_argument("--int", choices=["RK4", "leapfrog", "velocity_verlet", "yoshida"], default="RK4", help="Integration method (simulation)")
+    parser.add_argument("--T", type=float, nargs="?", help="Total time to run simulation (simulation)")
+    parser.add_argument("--dt", type=float, nargs="?", help="Timestep size (simulation)")
+    
+    parser.add_argument("--file-name", type=str, default="output", help="Name for mp4 file (animation)")
+    parser.add_argument("--skip-frames", type=float, nargs="?", help="Skip frames (animation)", default=None)
+    parser.add_argument("--fps", type=float, nargs="?", help="Frames per second (animation)", default=30)
+
 
     args = parser.parse_args()
 
@@ -74,13 +78,15 @@ def main():
         simulation = System(bodies, dimensionless=True)
         if args.coulomb:
             simulation.ODEs_to_solve(electrostatic_force)
-        simulation.ODEs_to_solve(gravitational_force)
+        else:
+            simulation.ODEs_to_solve(gravitational_force)
     else:
         simulation = System(bodies, dimensionless=False)
         if args.coulomb:
             simulation.ODEs_to_solve(electrostatic_force)
-        simulation.ODEs_to_solve(gravitational_force)
-    
+        else:
+            simulation.ODEs_to_solve(gravitational_force)
+
     if args.int is not None:
         integrator = args.int
     else:
@@ -105,12 +111,19 @@ def main():
     except ValueError:
             print("ValueError: Please enter a valid numerical value.")
             return None
+
+    if args.skip_frames:
+        skip_frames = args.skip_frames
+    else:
+        skip_frames=None
+    if args.fps:
+        fps = args.fps
     
     print("\n")
     print("Now we will begin time evolving!!")
     simulation.evolve(T, dt)
     print("\n")
-    create_animation(simulation, args.file_name, potential_on=True)
+    create_animation(simulation, output_dir="output", file_name=args.file_name, potential_on=True, fps=fps, skip_frames=skip_frames)
 
 if __name__ == "__main__":
 
