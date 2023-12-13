@@ -1,48 +1,120 @@
-import os
-import numpy as np
-import astropy.units as u
+#!/usr/bin/env python3
+
 from simulation.body import Body
 from simulation.system import System
-from simulation.forces import gravitational_force, electrostatic_force
-from utils.energy_calc import calculate_total_energy
 from utils.animation import create_animation
+import argparse
+from simulation.forces import gravitational_force, electrostatic_force
+import multiprocessing as mp
+
+def parse_bodies(num_bodies, gravity, coulomb=None, masses=None, x_vecs=None, v_vecs=None, charges=None):
+
+    bodies = []
+    for i in range(num_bodies):
+        try:
+            if masses is not None:
+                mass = masses[i]
+            else:
+                mass = float(input(f"Enter mass for body {i + 1}: "))
+            if x_vecs is not None:
+                x_vec = x_vecs[i * 3: (i + 1) * 3]
+            else:
+                x_vec = [float(x) for x in input(f"Enter position coordinates for body {i + 1} (x y z format): ").split()]
+            if v_vecs is not None:
+                v_vec = v_vecs[i * 3: (i + 1) * 3]
+            else:
+                v_vec = [float(vx) for vx in input(f"Enter velocity for body {i + 1} (v_x v_y v_z format): ").split()]
+            if coulomb:
+                if charges is not None:
+                    charge = charges[i]
+                else:
+                    charge = float(input(f"Enter charge for body {i + 1}: "))
+        except ValueError:
+            print("ValueError: Please enter a valid numerical value.")
+            return None
+        
+        if coulomb:
+            bodies.append(Body(mass, x_vec, v_vec, charge))
+        else:
+            bodies.append(Body(mass, x_vec, v_vec))
+    
+    return bodies
 
 def main():
 
-    Body1 = Body(
-    mass=1,
-    x_vec=np.array([-1.0024277970 , 0.0041695061, 0]),  # Initial position for star 1
-    v_vec=np.array([0.3489048974  , 0.5306305100   , 0]),  # Initial velocity for star 1
-    has_units=False
-    )
+    parser = argparse.ArgumentParser(description='Run N Body Simulations using numerical integration methods of choice & animate them.')
+    parser.add_argument("--num-bodies", type=int, default=1, help="Number of bodies in the simulation")
+    parser.add_argument("--gravity", action='store_true', default=True, help="Model gravitational forces")
+    parser.add_argument("--coulomb", action='store_true', help="Model electrostatic forces")
+    parser.add_argument("--dimensionless", action='store_true', default=False, help="Dimensionless, constants=1")
+    parser.add_argument("--file_name", type=str, default="output", help="name for mp4 file")
 
-    Body2 = Body(
-        mass=1,
-        x_vec=np.array([1.0024277970, -0.0041695061, 0]),  # Initial position for star 2
-        v_vec=np.array([0.3489048974  , 0.5306305100   , 0]),  # Initial velocity for star 2
-        has_units=False
-    )
-    Body3 = Body(
-        mass=1,
-        x_vec=np.array([0, 0, 0]),  # Initial position for star 2
-        v_vec=np.array([-2*0.3489048974, -2*0.5306305100, 0]),  # Initial velocity for star 2
-        has_units=False
-    )
+    parser.add_argument("--mass", type=float, nargs="+", help="Mass of the bodies")
+    parser.add_argument("--x-vec", type=float, nargs="+", help="Position vector (x, y, z) of the bodies")
+    parser.add_argument("--v-vec", type=float, nargs="+", help="Velocity vector (vx, vy, vz) of the bodies")
+    parser.add_argument("--charge", type=float, nargs="+", help="Charge of the bodies")
+    parser.add_argument("--int", choices=["RK4", "leapfrog", "velocity_verlet", "yoshida"], default="RK4", help="Integration method")
+    parser.add_argument("--T", type=float, nargs="?", help="Total time to run simulation")
+    parser.add_argument("--dt", type=float, nargs="?", help="Timestep size")
 
-    bodies = [Body1, Body2, Body3]
+    args = parser.parse_args()
 
-    simulation = System(bodies, has_units=False, G_is_one=True)
-    simulation.ODEs_to_solve(gravitational_force)
-    simulation.method_to_use("leapfrog")
+    bodies = parse_bodies(args.num_bodies, args.gravity, args.coulomb, args.mass, args.x_vec, args.v_vec, args.charge)
 
-    # run simulation
-    simulation.evolve(6*6.3490473929,0.03809428435)
+    print("\n")
+    if bodies is not None:
+        print("Initialized the following bodies:")
+        for i, body in enumerate(bodies):
+            if args.coulomb:
+                print(f"Body {i + 1} - mass: {body.mass}, x_vec: {body.x_vec}, v_vec: {body.v_vec}, charge: {body.charge}")
+            else:
+                print(f"Body {i + 1} - mass: {body.mass}, x_vec: {body.x_vec}, v_vec: {body.v_vec}")
 
-    # Visualization and output directory
-    output_dir = "output"
-    os.makedirs(output_dir, exist_ok=True)
+    if args.dimensionless:
+        simulation = System(bodies, dimensionless=True)
+        if args.coulomb:
+            simulation.ODEs_to_solve(electrostatic_force)
+        simulation.ODEs_to_solve(gravitational_force)
+    else:
+        simulation = System(bodies, dimensionless=False)
+        if args.coulomb:
+            simulation.ODEs_to_solve(electrostatic_force)
+        simulation.ODEs_to_solve(gravitational_force)
+    
+    if args.int is not None:
+        integrator = args.int
+    else:
+        print("\n")
+        integrator = input("Enter integrator of choice (RK4, leapfrog, velocity_verlet, yoshida): ")
+    
+    if integrator not in ['RK4', 'leapfrog', 'velocity_verlet', 'yoshida']:
+        raise ValueError('ValueError: Not a valid integrator (choose from RK4, leapfrog, velocity_verlet, yoshida).')
+        return None
+    
+    simulation.method_to_use(integrator)
 
-    create_animation(simulation, output_dir, "3body", potential_on=True)
+    try:
+        if args.T is not None:
+            T = args.T
+        else:
+            T = float(input("Enter total time to run sim: "))
+        if args.dt is not None:
+            dt = args.dt
+        else:
+            dt = float(input("Enter timestep size: "))
+    except ValueError:
+            print("ValueError: Please enter a valid numerical value.")
+            return None
+    
+    print("\n")
+    print("Now we will begin time evolving!!")
+    simulation.evolve(T, dt)
+    print("\n")
+    create_animation(simulation, args.file_name, potential_on=True)
 
 if __name__ == "__main__":
+
+    from utils.animation import create_animation
+    from utils.visualization import render_positions, render_positions_w_potential
+
     main()
