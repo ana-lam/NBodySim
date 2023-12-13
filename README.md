@@ -16,4 +16,4 @@ The N-body problem involves predicting and understanding a dynamical system of m
 
 `imgs/` - Images for write up.
 
-`misc_figures` - Figures generated during the study of the problem and methods.
+`misc_figures/` - Figures generated during the study of the problem and methods.
